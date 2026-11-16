@@ -85,17 +85,18 @@ fi
 echo ""
 echo -e "${YELLOW}[1/4] Установка warpscout...${NC}"
 
+NEED_DOWNLOAD=1
 if [ -x "$WARPSCOUT_BIN" ]; then
     echo -e "${YELLOW}[INFO]${NC} $WARPSCOUT_BIN уже существует."
     printf "Перезаписать? [y/N]: "
     read -r ans
     case "$ans" in
-        y|Y) ;;
-        *) echo "Использую существующий." ;;
+        y|Y) NEED_DOWNLOAD=1 ;;
+        *)   NEED_DOWNLOAD=0; echo "Использую существующий." ;;
     esac
 fi
 
-if [ ! -x "$WARPSCOUT_BIN" ] || [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+if [ "$NEED_DOWNLOAD" = "1" ]; then
     echo "Скачивание: $WARPSCOUT_URL"
     TMP_WC=$(mktemp) || { echo -e "${RED}Не удалось создать tmp${NC}"; exit 1; }
     if ! wget -q -O "$TMP_WC" "$WARPSCOUT_URL"; then
@@ -104,14 +105,12 @@ if [ ! -x "$WARPSCOUT_BIN" ] || [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
         exit 1
     fi
 
-    # Проверка: ELF и размер
+    # Проверка размера (защита от HTML-страницы ошибки)
     bsz=$(wc -c < "$TMP_WC" 2>/dev/null | tr -d ' \t')
     case "$bsz" in ''|*[!0-9]*) bsz=0 ;; esac
-    magic=$(head -c 4 "$TMP_WC" 2>/dev/null | od -An -tx1 | tr -d ' \n')
-    if [ "$bsz" -lt 1000000 ] || [ "$magic" != "7f454c46" ]; then
+    if [ "$bsz" -lt 1000000 ]; then
         rm -f "$TMP_WC"
-        echo -e "${RED}Скачанный файл не похож на ELF (размер=${bsz}, magic=${magic}).${NC}"
-        echo "Проверьте URL или соединение."
+        echo -e "${RED}Файл слишком маленький (${bsz} Б) — вероятно, обрыв или ошибка.${NC}"
         exit 1
     fi
 
@@ -122,7 +121,7 @@ fi
 
 # ----- Проверка запуска warpscout -----
 if ! "$WARPSCOUT_BIN" version >/dev/null 2>&1; then
-    echo -e "${RED}warpscout не запускается (возможно, несовместимая архитектура).${NC}"
+    echo -e "${RED}warpscout не запускается (возможно, несовместимая архитектура или битый файл).${NC}"
     exit 1
 fi
 echo -e "${GREEN}[OK]${NC} warpscout запускается."
