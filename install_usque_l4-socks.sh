@@ -157,7 +157,7 @@ fi
 #  3. warpscout scan -> masque-h2-config.conf
 # ==============================================
 echo ""
-echo -e "${YELLOW}[3/4] Сканирование masque-h2 (это займёт ~2-5 минут)...${NC}"
+echo -e "${YELLOW}[3/4] Сканирование masque-h2 (это займёт ~2-15 минут)...${NC}"
 
 OLD_CONF=""
 if [ -s "$MASQUE_CONF" ]; then
@@ -170,7 +170,6 @@ SCAN_OK=0
 ( cd "$CONFIG_DIR" && \
   "$WARPSCOUT_BIN" scan \
     -proto masque-h2 \
-    -f \
     -port 4500 \
     -masque-sni "$MASQUE_SNI" \
     -speed \
